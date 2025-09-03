@@ -163,7 +163,7 @@ plot_sig_chart <- function(vals, title = "", caption = NULL,
       labels = c("Higher than average", "No significant difference", "Lower than average")
     ) +
     labs(x = NULL, y = NULL, title = title, caption = caption) +
-    scale_y_continuous(expand = expansion(mult = c(0, .12))) +
+    scale_y_continuous(limits = c(0, 100), expand = c(0, 0)) +
     theme_minimal(base_size = 11) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           panel.grid.minor = element_blank(),
