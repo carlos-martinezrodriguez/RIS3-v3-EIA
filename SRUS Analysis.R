@@ -127,9 +127,23 @@ group_sig_values <- function(df, rows, base_row,
 # palette can be any named vector with higher/ns/lower
 plot_sig_chart <- function(vals, title = "", caption = NULL,
                            palette = c(higher = "#2C7BB6",  # blue (higher)
-                                       ns     = "#9ECAE1",  # light blue (no sig)
-                                       lower  = "#F28E2B"   # orange (lower)
-                           )) {
+                                       ns     = "#9ECAE1",  # light blue
+                                       lower  = "#F28E2B"   # orange
+                           ),
+                           folder = "SRUS Graphs",
+                           compare_to = c("complement","total")) {
+  
+  compare_to <- match.arg(compare_to)
+  
+  # grab object name (e.g. vals_weekly → "vals_weekly")
+  obj_name <- deparse(substitute(vals))
+  # strip leading "vals_" if present
+  suffix <- sub("^vals_", "", obj_name)
+  
+  # build file name
+  if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
+  file_out <- file.path(folder, paste0("srus_", suffix, "_", compare_to, ".png"))
+  
   vals <- vals |>
     dplyr::mutate(sig_cat = dplyr::case_when(
       sig & direction == "higher" ~ "higher",
@@ -138,9 +152,9 @@ plot_sig_chart <- function(vals, title = "", caption = NULL,
     ),
     sig_cat = factor(sig_cat, levels = c("higher","ns","lower"))
     ) |>
-    dplyr::filter(!is.na(percent), percent != 0)   # <--- skip empty/missing
+    dplyr::filter(!is.na(percent), percent != 0)
   
-  ggplot(vals, aes(x = label, y = percent, fill = sig_cat)) +
+  p <- ggplot(vals, aes(x = label, y = percent, fill = sig_cat)) +
     geom_col(width = 0.7) +
     geom_text(aes(label = round(percent)), vjust = -0.35, size = 3) +
     scale_fill_manual(
@@ -154,6 +168,11 @@ plot_sig_chart <- function(vals, title = "", caption = NULL,
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           panel.grid.minor = element_blank(),
           legend.title = element_blank())
+  
+  ggsave(file_out, plot = p, width = 8, height = 5, dpi = 300)
+  message("Saved: ", file_out)
+  
+  invisible(p)
 }
 
 # Row collapse and plotting
@@ -163,52 +182,52 @@ vals_weekly <- group_sig_values(df, rows = 4:6, base_row = 11,
                                 compare_to = "total",
                                 deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_weekly,
-               title = "% Using the SRN at Least Once Weekly (Significance against Total)")
+               title = "% Using the SRN at Least Once Weekly (Significance against Total)", compare_to = "total")
 
 vals_weekly <- group_sig_values(df, rows = 4:6, base_row = 11,
                                 compare_to = "complement",
                                 deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_weekly,
-               title = "% Using the SRN at Least Once Weekly (Significance against Complement)")
+               title = "% Using the SRN at Least Once Weekly (Significance against Complement)", compare_to = "complement")
 
 #Annual mileage 
 vals_mileage <- group_sig_values(df, rows = 15:18, base_row = 21,
                                  compare_to = "total",
                                  deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_mileage,
-               title = "% With More than 10k Annual Miles (Significance against Total)")
+               title = "% With More than 10k Annual Miles (Significance against Total)", compare_to = "total")
 
 vals_mileage <- group_sig_values(df, rows = 15:18, base_row = 21,
                                  compare_to = "complement",
                                  deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_mileage,
-               title = "% With More than 10k Annual Miles (Significance against Complement)")
+               title = "% With More than 10k Annual Miles (Significance against Complement)", compare_to = "complement")
 
 #Purpose: Commuting
 vals_purpose_commute <- group_sig_values(df, rows = 23, base_row = 31,
                                          compare_to = "total",
                                          deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_purpose_commute,
-               title = "% Use SRN for Commuting (Significance against Total)")
+               title = "% Use SRN for Commuting (Significance against Total)", compare_to = "total")
 
 vals_purpose_commute <- group_sig_values(df, rows = 23, base_row = 31,
                                          compare_to = "complement",
                                          deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_purpose_commute,
-               title = "% Use SRN for Commuting (Significance against Complement)")
+               title = "% Use SRN for Commuting (Significance against Complement)", compare_to = "complement")
 
 #Purpose: Leisure
 vals_purpose_leisure <- group_sig_values(df, rows = 24, base_row = 31,
                                          compare_to = "total",
                                          deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_purpose_leisure,
-               title = "% Use SRN for Leisure (Significance against Total)")
+               title = "% Use SRN for Leisure (Significance against Total)", compare_to = "total")
 
 vals_purpose_leisure <- group_sig_values(df, rows = 24, base_row = 31,
                                          compare_to = "complement",
                                          deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_purpose_leisure,
-               title = "% Use SRN for Leisure (Significance against Complement)")
+               title = "% Use SRN for Leisure (Significance against Complement)", compare_to = "complement")
 
 
 # Overall satisfaction
@@ -216,13 +235,13 @@ vals_satisfaction <- group_sig_values(df, rows = 32:33, base_row = 39,
                                          compare_to = "total",
                                          deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_satisfaction,
-               title = "% Very or Fairly Satisfied with the SRN (Significance against Total)")
+               title = "% Very or Fairly Satisfied with the SRN (Significance against Total)", compare_to = "total")
 
 vals_satisfaction <- group_sig_values(df, rows = 32:33, base_row = 39,
                                       compare_to = "complement",
                                       deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_satisfaction,
-               title = "% Very or Fairly Satisfied with the SRN (Significance against Complement)")
+               title = "% Very or Fairly Satisfied with the SRN (Significance against Complement)", compare_to = "complement")
 
 
 #Journey Time Satisfaction
@@ -230,13 +249,13 @@ vals_jts <- group_sig_values(df, rows = 48:49, base_row = 55,
                                       compare_to = "total",
                                       deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_jts,
-               title = "% Very or Fairly Satisfied with Journey Time (Significance against Total)")
+               title = "% Very or Fairly Satisfied with Journey Time (Significance against Total)", compare_to = "total")
 
 vals_jts <- group_sig_values(df, rows = 48:49, base_row = 55,
                              compare_to = "complement",
                              deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_jts,
-               title = "% Very or Fairly Satisfied with Journey Time (Significance against Complement)")
+               title = "% Very or Fairly Satisfied with Journey Time (Significance against Complement)", compare_to = "complement")
 
 
 # Satisfaction with Roadworks
@@ -244,13 +263,13 @@ vals_satisfaction_roadworks <- group_sig_values(df, rows = 56:59, base_row = 70,
                              compare_to = "total",
                              deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_satisfaction_roadworks,
-               title = "% Very or Fairly Satisfied with Roadwork Management (Significance against Total)")
+               title = "% Very or Fairly Satisfied with Roadwork Management (Significance against Total)", compare_to = "total")
 
 vals_satisfaction_roadworks <- group_sig_values(df, rows = 56:59, base_row = 70,
                                                 compare_to = "complement",
                                                 deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_satisfaction_roadworks,
-               title = "% Very or Fairly Satisfied with Roadwork Management (Significance against Complement)")
+               title = "% Very or Fairly Satisfied with Roadwork Management (Significance against Complement)", compare_to = "complement")
 
 
 # Feelings of Safety
@@ -258,12 +277,12 @@ vals_feel_safe <- group_sig_values(df, rows = 40:41, base_row = 47,
                                                 compare_to = "total",
                                                 deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_feel_safe,
-               title = "% Feel Safe or Very Safe when Using the SRN (Significance against Total)")
+               title = "% Feel Safe or Very Safe when Using the SRN (Significance against Total)", compare_to = "total")
 
 vals_feel_safe <- group_sig_values(df, rows = 40:41, base_row = 47,
                                    compare_to = "complement",
                                    deff = 1.7, min_diff_pp = 3)
 plot_sig_chart(vals_feel_safe,
-               title = "% Feel Safe or Very Safe when Using the SRN (Significance against Complement)")
+               title = "% Feel Safe or Very Safe when Using the SRN (Significance against Complement)", compare_to = "complement")
 
 
