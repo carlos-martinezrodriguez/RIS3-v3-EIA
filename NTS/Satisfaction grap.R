@@ -10,10 +10,10 @@ nts_satisfaction_plot <- function(
     outdir = "NTS/NTS Graphs",
     outfile = "nts_satisfaction_srn.png"
 ){
-  # read: skip 4 header rows with notes so row 5 becomes header
+
   df <- read_xlsx(path, sheet = sheet, skip = 4)
   
-  # pick response columns; drop "Satisfaction" label, "All users", and sample size
+
   drop_cols <- grep("All users|Unweighted|Satisfaction", names(df), value = TRUE)
   measure_cols <- setdiff(names(df), c("Year", drop_cols))
   
@@ -23,7 +23,7 @@ nts_satisfaction_plot <- function(
     mutate(
       percent = as.numeric(percent),
       response = str_replace_all(response, "\\s*\\(%\\)", "") |> str_squish(),
-      # set a sensible legend/order
+
       response = factor(response,
                         levels = c("Very satisfied", "Fairly satisfied",
                                    "Neither satisfied nor dissatisfied",
@@ -49,5 +49,5 @@ nts_satisfaction_plot <- function(
   invisible(p)
 }
 
-# Run it
+
 nts_satisfaction_plot()
