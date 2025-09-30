@@ -8,10 +8,10 @@ library(ggplot2)
 load_survey <- function(path, sheet = 1){
   raw <- read_xlsx(path, sheet = sheet, col_names = FALSE)
   
-  cat <- as.character(unlist(raw[1, ]))     # row 1: Category
-  sub <- as.character(unlist(raw[2, ]))     # row 2: Subcategory
+  cat <- as.character(unlist(raw[1, ]))     
+  sub <- as.character(unlist(raw[2, ]))    
   
-  # forward-fill blanks in row 1 (category)
+
   if (length(cat) > 1) {
     for (i in 2:length(cat)) {
       if (is.na(cat[i]) || cat[i] == "") cat[i] <- cat[i-1]
@@ -22,11 +22,11 @@ load_survey <- function(path, sheet = 1){
   header[1:2] <- c("Question", "Response")  # A,B
   names(raw) <- header
   
-  df <- raw[-c(1:3), ]                      # drop row1, row2, row3 (%)
+  df <- raw[-c(1:3), ]                 
   df
 }
 
-# default group set (same as your example chart)
+# default group set
 default_groups <- function() c(
   "Total_Total",
   "Gender_Male","Gender_Female",
@@ -49,11 +49,7 @@ default_labels <- function() c(
 
 .to_num <- function(x) as.numeric(gsub("[^0-9.\\-]", "", as.character(x)))
 
-# keep your previous helpers: load_survey(), default_groups(), default_labels(), .to_num()
 
-# Compare each subgroup either to its COMPLEMENT (default, statistically clean)
-# or to the overall TOTAL (via a binomial test; optimistic because Total is estimated).
-# You can also set a design effect and a minimum difference in percentage points.
 group_sig_values <- function(df, rows, base_row,
                              groups = default_groups(),
                              labels = default_labels(),
@@ -61,8 +57,8 @@ group_sig_values <- function(df, rows, base_row,
                              compare_to = c("complement","total"),
                              alpha = 0.05,
                              p_adjust = "BH",
-                             deff = 1,                  # e.g., 1.5 or 2 if you want to be conservative
-                             min_diff_pp = 0,           # e.g., 3 to require ≥3pp difference
+                             deff = 1,               
+                             min_diff_pp = 0,     
                              excel_rows = TRUE) {
   
   compare_to <- match.arg(compare_to)
@@ -99,7 +95,7 @@ group_sig_values <- function(df, rows, base_row,
       pval <- tryCatch(fisher.test(tab)$p.value, error = function(e) NA_real_)
       p_ref <- p_comp_raw
     } else {
-      # subgroup vs overall total (treat total as fixed p0) -- optimistic
+      # subgroup vs overall total 
       pval <- tryCatch(binom.test(s_g, round(n_g), p = p_total/100)$p.value, error = function(e) NA_real_)
       p_ref <- p_total
     }
@@ -123,8 +119,6 @@ group_sig_values <- function(df, rows, base_row,
   out
 }
 
-# vals = output from group_sig_values(...)
-# palette can be any named vector with higher/ns/lower
 plot_sig_chart <- function(vals, title = "", caption = NULL,
                            palette = c(higher = "#2C7BB6",  # blue (higher)
                                        ns     = "#9ECAE1",  # light blue
@@ -135,12 +129,12 @@ plot_sig_chart <- function(vals, title = "", caption = NULL,
   
   compare_to <- match.arg(compare_to)
   
-  # grab object name (e.g. vals_weekly → "vals_weekly")
+ 
   obj_name <- deparse(substitute(vals))
-  # strip leading "vals_" if present
+
   suffix <- sub("^vals_", "", obj_name)
   
-  # build file name
+
   if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
   file_out <- file.path(folder, paste0("srus_", suffix, "_", compare_to, ".png"))
   
