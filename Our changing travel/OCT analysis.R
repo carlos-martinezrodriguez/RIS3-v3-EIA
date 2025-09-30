@@ -1,6 +1,3 @@
-# =========================================================
-# Our Changing Travel — ≥ weekly SRN use (faceted blocks)
-# =========================================================
 
 library(readxl)
 library(dplyr)
@@ -9,7 +6,7 @@ library(stringr)
 library(tibble)
 library(grid)
 library(gtable)
-# ---------- utilities ----------
+
 numify <- function(x) as.numeric(gsub("[^0-9.\\-]", "", as.character(x)))
 clean_names <- function(v) gsub("\\.\\.\\.[0-9]+$", "", v)
 
@@ -29,11 +26,11 @@ read_oct <- function(path, sheet) {
 add_facet_separators <- function(p, colour = "grey60", linetype = "dashed", size = 0.6){
   g <- ggplotGrob(p)
   panels <- grep("^panel", g$layout$name)
-  panel_cols <- unique(g$layout$l[panels])        # columns of panels
-  panel_top  <- min(g$layout$t[panels])           # top row of panels
-  panel_bot  <- max(g$layout$b[panels])           # bottom row of panels
+  panel_cols <- unique(g$layout$l[panels])   
+  panel_top  <- min(g$layout$t[panels])          
+  panel_bot  <- max(g$layout$b[panels])          
   
-  # add a separator at the right edge of each panel except the last
+
   for(i in head(panel_cols, -1)){
     g <- gtable::gtable_add_grob(
       g,
@@ -45,7 +42,7 @@ add_facet_separators <- function(p, colour = "grey60", linetype = "dashed", size
   }
   g
 }
-# Unweighted row=13, Weighted row=15, weekly count rows=17,20,23,26; Total column B
+
 extract_weekly_fixed <- function(df, col_letters,
                                  total_col_letter = "B",
                                  uw_row = 13, wb_row = 15, count_rows = c(17,20,23,26),
@@ -80,7 +77,7 @@ extract_weekly_fixed <- function(df, col_letters,
   )
 }
 
-# Significance vs TOTAL (binom) or COMPLEMENT (Fisher), 3pp practical threshold
+# Significance vs total (binom) or complement (Fisher)
 add_sig <- function(df, compare_to = c("total","complement"),
                     alpha = 0.05, min_diff_pp = 3) {
   compare_to <- match.arg(compare_to)
@@ -111,7 +108,7 @@ add_sig <- function(df, compare_to = c("total","complement"),
            sig = !is.na(pval) & pval < alpha & abs(diff_pp) >= min_diff_pp)
 }
 
-# Faceted chart: subgroup labels on x-axis, single category label BELOW (strip at bottom)
+# Faceted chart
 plot_faceted_sig <- function(dat, title, outfile,
                              outdir = "Our changing travel/Graphs") {
   
@@ -140,12 +137,12 @@ plot_faceted_sig <- function(dat, title, outfile,
       panel.grid.minor = element_blank(),
       axis.text.x = element_text(angle = 45, hjust = 1),
       strip.background = element_blank(),
-      strip.placement  = "outside",              # category labels BELOW the ticks
+      strip.placement  = "outside",              
       strip.text.x.bottom = element_text(face = "bold", margin = margin(t = 6)),
       panel.spacing.x = unit(1, "lines")
     )
   
-  # add one dashed vertical line between category blocks
+
   g <- add_facet_separators(p, colour = "grey60", linetype = "dashed", size = 0.6)
   
   if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
@@ -155,7 +152,7 @@ plot_faceted_sig <- function(dat, title, outfile,
   invisible(g)
 }
 
-# ------------------ MAIN ------------------
+# MAIN
 our_changing_travel_weekly_facets <- function(
     path = "Our changing travel/Our Changing Travel 0226-0227.xlsx",
     sheet_0226 = "0226", sheet_0227 = "0227",
@@ -166,17 +163,17 @@ our_changing_travel_weekly_facets <- function(
   df26 <- read_oct(path, sheet_0226)
   df27 <- read_oct(path, sheet_0227)
   
-  # Columns per your workbook:
+  # Columns 
   age_cols    <- c("C","D","E","F","G")     # 16-24, 25-34, 35-44, 45-54, 55-75
   gender_cols <- c("W","X")                 # Male, Female
   ur_cols     <- c("Y","Z")                 # Urban, Rural
   
   eth_cols    <- c("C","D")                 # Ethnic minority, White
-  health_cols <- c("J","K")                 # Physical or Mental Condition, No Health Condition
+  health_cols <- c("J","K")                 # Physical or mental health condition
   emp_cols    <- c("S","T")                 # Working FT/PT/SE, NOT FT/PT/SE
   grade_cols  <- c("Z","AA","AB","AC","AD","AE")  # AB, C1, C2, DE, ABC1, C2DE
   
-  # Extract + significance (each vs the corresponding sheet total)
+  # Extract + significance
   age     <- extract_weekly_fixed(df26, age_cols)     |> add_sig(compare_to) |> mutate(group = "Age")
   gender  <- extract_weekly_fixed(df26, gender_cols)  |> add_sig(compare_to) |> mutate(group = "Gender")
   urban   <- extract_weekly_fixed(df26, ur_cols)      |> add_sig(compare_to) |> mutate(group = "Urban/Rural")
@@ -186,7 +183,7 @@ our_changing_travel_weekly_facets <- function(
   emp     <- extract_weekly_fixed(df27, emp_cols)     |> add_sig(compare_to) |> mutate(group = "Employment")
   grade   <- extract_weekly_fixed(df27, grade_cols)   |> add_sig(compare_to) |> mutate(group = "Social grade")
   
-  # Set A
+
   datA <- bind_rows(eth, age, health, gender)
   plot_faceted_sig(
     datA,
@@ -194,7 +191,7 @@ our_changing_travel_weekly_facets <- function(
     outfile = paste0("oct_weekly_setA_facets_", compare_to, ".png")
   )
   
-  # Set B
+
   datB <- bind_rows(grade, emp, urban)
   plot_faceted_sig(
     datB,
@@ -205,6 +202,6 @@ our_changing_travel_weekly_facets <- function(
   invisible(list(setA = datA, setB = datB))
 }
 
-# ---- Run (pick one or both) ----
+# Run (pick one)
 our_changing_travel_weekly_facets(compare_to = "total")
 our_changing_travel_weekly_facets(compare_to = "complement")
