@@ -13,19 +13,19 @@ plot_ethnicity_car_access <- function(
 ){
   df <- read_xlsx(path, sheet = sheet, skip = 4)
   
-  # filter year 2024
+
   df_2024 <- df %>% filter(Year == year_filter)
   
-  # pick "All adults with a car or van (%)" column (col G in screenshot)
+
   df_sel <- df_2024 %>%
     select(`Ethnic group`, percent = `All adults in households with a car or van (%)`,
            n = `Unweighted sample size: individuals aged 17 and over (number) [note 2]`)
   
-  # overall row
+
   overall <- df_sel %>% filter(str_detect(`Ethnic group`, "All ethnic")) %>%
     summarise(p_total = percent, n_total = n)
   
-  # significance: binomial test each group vs overall
+
   results <- df_sel %>%
     filter(!str_detect(`Ethnic group`, "All ethnic")) %>%
     rowwise() %>%
@@ -34,10 +34,10 @@ plot_ethnicity_car_access <- function(
       pval = tryCatch(binom.test(s_g, n, p = overall$p_total/100)$p.value, error = function(e) NA),
       diff_pp = percent - overall$p_total,
       direction = ifelse(percent > overall$p_total, "higher", "lower"),
-      sig = !is.na(pval) & pval < 0.05 & abs(diff_pp) >= 3   # require ≥3pp gap
+      sig = !is.na(pval) & pval < 0.05 & abs(diff_pp) >= 3 
     ) %>% ungroup()
   
-  # plot
+
   p <- ggplot(results, aes(x = `Ethnic group`, y = percent,
                            fill = case_when(
                              sig & direction == "higher" ~ "higher",
@@ -70,5 +70,5 @@ plot_ethnicity_car_access <- function(
   invisible(p)
 }
 
-# Run it
+
 plot_ethnicity_car_access()
