@@ -6,14 +6,14 @@ library(stringr)
 plot_disability_car_access_pct <- function(
     path = "NTS/Surveys/NTS trips by personal car access, disability status and age.xlsx",
     sheet = "DIS0405b",
-    year_contains = "2024",                     # matches "2023 to 2024", etc.
+    year_contains = "2024",                  
     outdir = "NTS/NTS Graphs",
     outfile = "nts_disability_car_access_2024.png",
-    min_diff_pp = 3                             # require >= 3pp for highlighting
+    min_diff_pp = 3                             
 ){
   df <- read_xlsx(path, sheet = sheet, skip = 4)
   
-  # Keep the year window that contains 2024 and the All-ages rows
+
   df_yr <- df %>%
     filter(str_detect(Year, fixed(year_contains)),
            `Age group` == "All ages 16 and over") %>%
@@ -27,10 +27,10 @@ plot_disability_car_access_pct <- function(
       n       = as.numeric(gsub(",", "", n_raw))
     )
   
-  # overall total as weighted mean across Disabled + Not disabled
+ 
   p_total <- with(df_yr, sum(percent * n, na.rm = TRUE) / sum(n, na.rm = TRUE))
   
-  # Significance vs total (binomial, using unweighted bases from the sheet)
+
   results <- df_yr %>%
     filter(!is.na(percent), !is.na(n), n > 0) %>%
     rowwise() %>%
@@ -42,7 +42,7 @@ plot_disability_car_access_pct <- function(
       sig = !is.na(pval) & pval < 0.05 & abs(diff_pp) >= min_diff_pp
     ) %>% ungroup()
   
-  # Plot (three-state colouring: higher / ns / lower)
+
   p <- ggplot(results, aes(x = `Disability status`, y = percent,
                            fill = case_when(
                              sig & direction == "higher" ~ "higher",
@@ -73,6 +73,6 @@ plot_disability_car_access_pct <- function(
   p
 }
 
-# Run it
+
 plot_disability_car_access_pct()
 
