@@ -1,13 +1,11 @@
-# =========================
-# NTS — car-trip share (all slices in one chart)
-# =========================
+
 library(readxl)
 library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
 
-# ---------- helpers ----------
+
 numify <- function(x) as.numeric(gsub("[^0-9.\\-]", "", as.character(x)))
 first_col_like <- function(df, pattern) {
   hit <- names(df)[grepl(pattern, names(df), ignore.case = TRUE)]
@@ -21,7 +19,7 @@ filter_year <- function(df, year_key) {
   else dplyr::filter(df, stringr::str_detect(.data[[ycol]], fixed(year_key)))
 }
 
-# car share % = (car driver + car passenger) / All modes
+
 car_share_percent <- function(df) {
   nms <- names(df)
   allm <- nms[grepl("^All\\s*modes", nms, ignore.case = TRUE)]
@@ -31,7 +29,7 @@ car_share_percent <- function(df) {
   car <- numify(df[[drv]]) + numify(df[[pas]])
   
   den <- if (length(allm)) numify(df[[allm[1]]]) else {
-    # sum mutually exclusive mode columns if "All modes" missing
+
     mode_prefixes <- c("^Walk(\\b|\\s)", "^Pedal\\s*cycle", "^Car\\s*or\\s*van\\s*driver",
                        "^Car\\s*or\\s*van\\s*passenger", "^Motorcycle",
                        "^Other\\s*private\\s*transport",
@@ -45,7 +43,7 @@ car_share_percent <- function(df) {
   100 * car / den
 }
 
-# significance vs TOTAL or COMPLEMENT (BH-adjusted), with ≥ min_diff_pp rule
+
 add_sig <- function(df, p_total, n_total,
                     compare_to = c("total","complement"),
                     alpha = 0.05, min_diff_pp = 3, p_adjust = "BH") {
@@ -61,7 +59,7 @@ add_sig <- function(df, p_total, n_total,
         ref = p_total
       )
   } else {
-    # vs complement: derive p_comp for each row from global p_total & n_total
+
     out <- out %>%
       mutate(
         p_comp = (p_total*n_total - percent*n) / pmax(n_total - n, 1e-8),
@@ -82,14 +80,14 @@ add_sig <- function(df, p_total, n_total,
     )
 }
 
-# unified plot (all slices in one chart, faceted)
+
 plot_all <- function(dat, title, outfile, outdir = "NTS/NTS Graphs") {
   dat <- dat %>%
     mutate(fill_cat = case_when(sig & direction=="higher" ~ "higher",
                                 sig & direction=="lower"  ~ "lower",
                                 TRUE                      ~ "ns"),
            fill_cat = factor(fill_cat, levels = c("higher","ns","lower")),
-           # keep order within each facet as provided
+
            label = forcats::fct_inorder(label))
   
   p <- ggplot(dat, aes(label, percent, fill = fill_cat)) +
@@ -114,8 +112,6 @@ plot_all <- function(dat, title, outfile, outdir = "NTS/NTS Graphs") {
   p
 }
 
-# ---------- loaders ----------
-# 1) Gender & Age
 load_gender_age_2024 <- function(path = "NTS/Surveys/NTS trips by sex, age and main mode.xlsx",
                                  sheet = "NTS0601a_trips",
                                  year_key = "2024") {
@@ -144,7 +140,7 @@ load_gender_age_2024 <- function(path = "NTS/Surveys/NTS trips by sex, age and m
        p_total_nat = overall$p_total[1], n_total_nat = overall$n_total[1])
 }
 
-# 2) Ethnicity (aggregate regions to national)
+
 load_ethnicity_2024 <- function(path = "NTS/Surveys/NTS trips and distance travelled by mode, ethnic group.xlsx",
                                 sheet = "NTS9917a_trips_region",
                                 year_key = "2024") {
@@ -166,7 +162,7 @@ load_ethnicity_2024 <- function(path = "NTS/Surveys/NTS trips and distance trave
   list(ethnicity = eth_nat)
 }
 
-# 3) Disability (use All aged 16+ if present)
+
 load_disability_2024 <- function(path = "NTS/Surveys/NTS trips and distance travelled by mode, disability status and age.xlsx",
                                  sheet = "DIS0402a_trips",
                                  year_key = "2024") {
@@ -192,28 +188,28 @@ load_disability_2024 <- function(path = "NTS/Surveys/NTS trips and distance trav
   list(disability = dis)
 }
 
-# ---------- build, test, plot ----------
-# One-panel chart
+
+
 plot_all_carshare_2024_side_by_side <- function(compare_to = c("total","complement"),
                                                 year_key = "2024",
                                                 outdir = "NTS/NTS Graphs") {
   compare_to <- match.arg(compare_to)
   
-  # load slices 
+
   ga  <- load_gender_age_2024(year_key = year_key)
   eth <- load_ethnicity_2024(year_key = year_key)
   dis <- load_disability_2024(year_key = year_key)
   
   combined <- dplyr::bind_rows(ga$gender, ga$age, eth$ethnicity, dis$disability)
   
-  # overall national p and n from All people + All ages (gender/age table)
+
   p_total <- ga$p_total_nat
   n_total <- ga$n_total_nat
   
   dat <- add_sig(combined, p_total = p_total, n_total = n_total,
                  compare_to = compare_to, min_diff_pp = 3)
   
-  # order blocks on the x-axis (change order here if you like)
+
   cat_order <- c("Age","Disability","Ethnicity","Gender")
   dat <- dat %>%
     dplyr::mutate(category = factor(category, levels = cat_order)) %>%
@@ -232,7 +228,7 @@ plot_all_carshare_2024_side_by_side <- function(compare_to = c("total","compleme
       fill_cat = factor(fill_cat, levels = c("higher","ns","lower"))
     )
   
-  # positions for faint separators between category blocks
+
   blocks <- dat |>
     dplyr::count(category, name = "n") |>
     dplyr::mutate(end = cumsum(n), start = end - n + 1L)
@@ -268,7 +264,7 @@ plot_all_carshare_2024_side_by_side <- function(compare_to = c("total","compleme
 }
 
 
-# 
-# Plotting.
+
+
 plot_all_carshare_2024_side_by_side(compare_to = "total")
 plot_all_carshare_2024_side_by_side(compare_to = "complement")
